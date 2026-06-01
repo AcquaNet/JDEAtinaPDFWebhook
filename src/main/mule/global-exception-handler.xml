@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+<error-handler name="ApiKit_Error_Handler" doc:id="22f4bc4f-3c50-4e31-b495-727ac246b1a7" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="986ed727-3938-4527-ae18-fdf805578edc" type="APIKIT:BAD_REQUEST" >
+			<set-variable value="400" doc:name="httpStatus" doc:id="38c3adbc-d115-43e6-98c8-beb54224edb6" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="cda56092-d373-4b09-a729-a7ac9aadb3c6" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8b3c8787-79f7-4270-8af8-438f14eff82c" type="APIKIT:NOT_FOUND" >
+			<set-variable value="404" doc:name="httpStatus" doc:id="1ead7f07-d393-4b63-b7bd-95ead16a2f4a" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="8030ac02-38b9-4ae7-9a43-898e57cfa13b" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="65cf1ba9-f577-463e-b7c7-d883eddc20c9" type="APIKIT:METHOD_NOT_ALLOWED" >
+			<set-variable value="405" doc:name="httpStatus" doc:id="61d2e010-e069-494d-857b-d1a3b926d675" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="49ff65fd-b582-46c7-b0f3-94c621efb215" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="843c9528-65f1-4cf7-adba-b8b471b5d565" type="APIKIT:NOT_ACCEPTABLE" >
+			<set-variable value="406" doc:name="httpStatus" doc:id="f1e8d8c6-2351-4d73-b0fa-ff4b29d6f932" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="74a26d48-fa0e-44ad-a313-293eb482d594" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c353f102-4815-4a48-a7b6-8c7bb67258ae" type="APIKIT:UNSUPPORTED_MEDIA_TYPE" >
+			<set-variable value="415" doc:name="httpStatus" doc:id="132b2ce4-d07c-48d9-ab05-40c42b67fa45" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="56f3f427-778c-4280-9fb6-08bfd3a41648" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="89e608f9-b8ff-4f97-9ee2-24f9f973d237" type="APIKIT:NOT_IMPLEMENTED" >
+			<set-variable value="501" doc:name="httpStatus" doc:id="903c2f50-d059-4e53-81f2-8538b2c241e2" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="51ae8ce4-924e-45cf-acc0-d50e7566d8ed" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="cb4961ca-7607-40f7-84a8-a2e43c3216dc" type="HTTP:UNAUTHORIZED" >
+			<set-variable value="401" doc:name="httpStatus" doc:id="c6f602c8-7dcb-4fa3-ae1e-621f97d22606" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="0c2384af-409a-4fea-ac10-20e657a7ce95" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1d4200b5-704d-42b9-94f8-949b886cfa8d" type="HTTP:NOT_FOUND">
+			<set-variable value="#[404]" doc:name="httpStatus" doc:id="29c97304-9965-45e7-af45-5e100ec12a2d" variableName="httpStatus"/>
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="d5bf9dc0-dc08-4c27-aca5-689803599e5d" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c565be3a-43bd-49cf-9a0b-6c9d6ea5d840" type="HTTP:BAD_REQUEST">
+			<set-variable value="#[400]" doc:name="httpStatus" doc:id="35562ba9-10cf-4f17-9d88-91ce3dc03ed5" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="3e4cab94-68e6-4138-8198-60ce8749827a" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="Default Exception Strategy" doc:id="155d32a6-4ccd-4a2d-8988-e7b5eb9bd55a">
+			<set-variable value="500" doc:name="httpStatus" doc:id="766b0771-a364-425a-9c61-e0e6aa3fee6d" variableName="httpStatus" />
+			<flow-ref doc:name="basic-global-exception-handler-flow" doc:id="66ddfcd0-1a03-4e9e-8bb5-c434a42f6c17" name="basic-global-exception-handler-flow" />
+		</on-error-propagate>
+	
+</error-handler>
+	<sub-flow name="basic-global-exception-handler-flow" doc:id="6a463904-b91d-4c06-b1ea-5d23dd59eca0" >
+		<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    apiVersion: &quot;v1&quot;,&#10;    appName: &quot;ce-backend&quot;,&#10;    error: {&#10;     	code:  vars.httpStatus,&#10;     	message: (vars.errorMessage default error.description) default &quot;Unhandled Exception&quot;,&#10;     	reason: '',&#10;     	errType: '',&#10;     	correlationId: correlationId&#10;     	} &#10; }]" doc:name="Set Payload" doc:id="5fcd9686-9966-4cac-b17e-f8cd4aab1e47" mimeType="application/json"/>
+		<set-variable value='#[output application/java&#10;---&#10;if(sizeOf(vars.outboundHeaders)==0) { &#10;		"jwtToken": vars.jwtToken,&#10;		"transactionID": 0,&#10;		"sessionId": 0,&#10;		"correlationId": correlationId &#10;} else&#10;{&#10;	"jwtToken": vars.outboundHeaders.jwtToken,&#10;		"transactionID": vars.outboundHeaders.transactionID,&#10;		"sessionId": vars.outboundHeaders.sessionId,&#10;		"correlationId": vars.outboundHeaders.correlationId &#10;}]' doc:name="Set Headers" doc:id="190671bc-6d85-431b-8e2f-010909f0681a" variableName="outboundHeaders" />
+		
+	</sub-flow>
+</mule>

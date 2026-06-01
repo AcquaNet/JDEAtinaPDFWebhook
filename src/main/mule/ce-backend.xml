@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+    <apikit:config name="ce-backend-config" api="ce-backend.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <vm:config name="VM_Config" doc:name="VM Config" doc:id="9d6f500a-c6b4-48ee-82c5-4b9b49ad449d">
+        <vm:connection />
+        <vm:queues>
+            <vm:queue queueName="TASK" />
+        </vm:queues>
+    </vm:config>
+    <os:object-store name="Object_store" doc:name="Object store" doc:id="e13669d8-3720-4dd7-9115-120c4474ea4f" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="42d8c270-569a-4ff2-bbfd-5bfe651fb116">
+        <http:request-connection host="localhost" port="8080" />
+    </http:request-config>
+    <flow name="ce-backend-main">
+        <http:listener config-ref="HTTPS_Listener_config" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="ce-backend-config" />
+    </flow>
+    <flow name="ce-backend-console">
+        <http:listener config-ref="HTTPS_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="ce-backend-config" />
+    </flow>
+    <flow name="get:\v1\status:ce-backend-config">
+        <flow-ref doc:name="status-flow" doc:id="2bd064eb-212f-4e51-8606-c6af9f6010bf" name="status-flow" />
+    </flow>
+    <flow name="post:\v1\webhooks\extraction:application\json:ce-backend-config">
+        <logger level="INFO" doc:name="Logger" doc:id="03488190-648a-464f-8c29-6ab3f7c39678" message="BEGIN Processing Request with Correlation ID #[correlationId]" />
+        <logger level="INFO" doc:name="Logger Payload" doc:id="b42e1587-4f46-4ef7-a015-8ab644f12cea" message="Payload Recibido: #[payload]" />
+        <logger level="INFO" doc:name="Logger Attributes" doc:id="934e318c-693e-437e-ae7c-7be5702fd38a" message="Headers: #[attributes.headers]" />
+        <choice doc:name="Choice" doc:id="dc468f98-d7ec-4cc3-a60c-accb65d476a4">
+            <when expression="#[payload.event_type == 'extraction_task_completed']">
+                <logger level="INFO" doc:name="Logger" doc:id="21acb447-cae4-49cf-ba21-300d118205ec" message="extraction_task_completed" />
+                <vm:publish doc:name="Publish" doc:id="be52b885-a346-4ee0-b774-af596080088f" config-ref="VM_Config" sendCorrelationId="ALWAYS" queueName="TASK" correlationId="#[correlationId]" />
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="Logger" doc:id="d3893924-f874-49cc-a10f-4b96ee07d6db" message="Email Processed" />
+                <vm:publish queueName="TASK" doc:name="Publish" doc:id="92bc302f-6fa3-4ab0-9321-6e1d33e707d7" config-ref="VM_Config" sendCorrelationId="ALWAYS" correlationId="#[correlationId]" />
+            </otherwise>
+        </choice>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"OK" as String {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Logger1" doc:id="19ef6788-7c03-4850-8a9b-6de9603619d4" message="END Processing Request with Correlation ID #[correlationId]" />
+    </flow>
+    <flow name="ce-backend-process-submission-flow" doc:id="2e32d1ad-e71f-43da-a23b-5994ef3891ed">
+        <vm:listener doc:name="Listener" doc:id="05a9e3e3-1fea-478c-8205-36a556bc90e5" config-ref="VM_Config" queueName="TASK" />
+        <logger level="INFO" doc:name="Logger Start" doc:id="fd7d0d93-ce2f-41f8-95de-2262ff2e1f6a" message="BEGIN Processing TASK with Correlation ID #[correlationId]" />
+        <logger level="INFO" doc:name="Logger Payload" doc:id="9c605fa6-9a28-4ef9-a38e-c101e7105633" message="Payload Received: #[payload]" />
+        <logger level="INFO" doc:name="Logger Attributes" doc:id="4bda44e4-06a1-4862-a331-a920f943636a" message="Headers: #[attributes.headers]" />
+        <choice doc:name="Choice" doc:id="b276e6af-fc26-4a02-a78d-8e7756f14710">
+            <when expression="#[payload.event_type == 'extraction_email_completed']">
+                <flow-ref doc:name="ce-backend-process-email-flow" doc:id="4ad0c610-97be-49c1-896a-b7424332836f" name="ce-backend-process-email-flow" />
+            </when>
+            <otherwise>
+                <flow-ref doc:name="ce-backend-process-email-flow" doc:id="15ab2e91-487c-4aae-80a4-1d6479d66d2d" name="ce-backend-process-pdf-flow" />
+            </otherwise>
+        </choice>
+        <logger level="INFO" doc:name="Logger End" doc:id="85ca1b88-b195-4e7b-8669-66d15c20439b" message="END Processing TASK with Correlation ID #[correlationId]" />
+    </flow>
+    <flow name="ce-backend-process-email-flow" doc:id="8cd9a5cd-e7fd-4183-8aa4-1ef99fc8bd52">
+        <set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  correlation_id: payload.webhook_correlation_id,&#10;  status: "PROCESSED",&#10;  reference: "Proveedor 521080",&#10;  message: "Factura registrada exitosamente"&#10;}]' doc:name="Prepare Response" doc:id="e872fbfe-fbc0-4fd3-9c3d-d2246dcd917c" />
+        <logger level="INFO" doc:name="Logger Start" doc:id="3a257a6a-365d-4366-bf49-36dfd449c742" message="Start Sending Callback..." />
+        <logger level="INFO" doc:name="Logger" doc:id="3877f09e-09d7-4ab6-b7c5-3c5329729ce7" message="Response: #[payload]" />
+        <http:request method="POST" doc:name="Request" doc:id="8730b721-0a97-42e8-ab8e-7105fd832d5a" config-ref="HTTP_Request_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
+            <http:headers><![CDATA[#[%dw 2.0
+    output application/java
+    ---
+    {
+      'Authorization': "Bearer " ++ p('atina.token')
+    }]]]></http:headers>
+        </http:request>
+    </flow>
+    <flow name="ce-backend-process-pdf-flow" doc:id="29dcfb54-e636-4d6d-a8d9-b1c23137643e">
+        <choice doc:name="Choice" doc:id="0fff0768-967c-43b2-9b15-a270dea6451a">
+            <when expression="#[payload.status == 'COMPLETED']">
+                <set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  correlation_id: payload.webhook_correlation_id,&#10;  status: &quot;PROCESSED&quot;,&#10;  reference: '00010-X1-25011239',&#10;  message: &quot;Factura registrada exitosamente&quot;&#10;}]" doc:name="Prepare Response" doc:id="36e25979-443c-4dc3-b885-222f80e917d7" />
+                <logger level="INFO" doc:name="Logger Start" doc:id="0dd539bc-a492-46c1-aa05-dad36e39cd1e" message="Start Sending Callback..." />
+                <logger level="INFO" doc:name="Logger" doc:id="f065b07a-2139-4912-87bd-56799625f0ba" message="Response: #[payload]" />
+                <http:request method="POST" doc:name="Request" doc:id="b45a45b3-66f1-4d6d-800f-335deac506db" config-ref="HTTP_Request_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
+                    <http:headers><![CDATA[#[%dw 2.0
+    output application/java
+    ---
+    {
+      'Authorization': "Bearer " ++ p('atina.token')
+    }]]]></http:headers>
+                </http:request>
+            </when>
+        </choice>
+    </flow>
+</mule>

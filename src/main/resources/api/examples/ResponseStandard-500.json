@@ -1,0 +1,11 @@
+{
+  "apiVersion": "v1",
+  "appName": "ce-backend",
+  "error": {
+    "code": "500",
+    "message": "Status Error Activated",
+    "reason": "",
+    "errType": "",
+    "correlationId": "c85f7b60-e2a4-11f0-ae49-1a8a1a431957"
+  }
+}

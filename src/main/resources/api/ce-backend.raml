@@ -1,0 +1,537 @@
+#%RAML 1.0
+title: CE Platform - APIs
+version: v1
+baseUri: http://ce-platform.com/api
+description: Integration API.
+protocols:
+  - HTTP
+
+documentation:
+  - title: Webhook API Documentation
+    content: |
+      This API describes the webhooks that ATINA Invoice Extractor will send to your system.
+
+      ## Webhook Types
+
+      The system sends two webhook types:
+
+      1. **extraction_task_completed** - Sent immediately when each individual PDF is processed
+      2. **extraction_email_completed** - Sent when ALL PDFs from the email finish processing
+
+      ## Configuration
+
+      Configure your webhook URL on the tenant:
+      - PUT /api/v1/tenants/{id}
+      - Field: `webhookUrl`
+
+      ## Retries
+
+      - Automatic retries: 5 attempts
+      - Exponential backoff: 60s, 120s, 240s, 480s, 960s
+      - Timeout: 30 seconds per request
+
+      ## Security
+
+      Webhooks include these headers:
+      - `Content-Type: application/json`
+      - `User-Agent: Atina-Invoice-Extractor/1.0`
+      - `X-Webhook-Event: {event_type}`
+
+      ## Idempotency
+
+      Use correlation IDs to guarantee idempotent processing:
+      - `webhook_correlation_id` - Identifies the unique email
+
+      ## Retry Tracking
+
+      When an admin retries a failed extraction, the webhook includes additional fields
+      to help you understand what changed:
+
+      **Task-level fields:**
+      - `is_retry` (boolean): true if this task was manually retried
+      - `previous_status` (string): the status before retry (e.g., "FAILED")
+      - `changed` (boolean): true if the status actually changed after retry
+
+      **Email-level fields (extraction_email_completed):**
+      - `has_retry_results` (boolean): true if any task in the email was retried
+      - `changed_count` (integer): number of tasks that changed status after retry
+
+      **Use cases:**
+      1. Retry succeeds: `is_retry=true`, `previous_status=FAILED`, `changed=true`, `status=COMPLETED`
+      2. Retry fails again: `is_retry=true`, `previous_status=FAILED`, `changed=false`, `status=FAILED`
+
+      This allows your system to:
+      - Distinguish first-time notifications from retry notifications
+      - Know exactly which PDFs changed status
+      - Avoid duplicate processing when status didn't change
+
+types:
+  # Unified webhook event type - all event-specific fields are optional
+  # Use event_type to determine which fields are present
+  WebhookEvent:
+    type: object
+    description: |
+      Unified webhook event type. Check `event_type` to determine the event:
+      - `extraction_task_completed`: Individual PDF processed (has original_filename, source, status, etc.)
+      - `extraction_email_completed`: All PDFs from email finished (has extractions array, total_files, etc.)
+    properties:
+      # === Common fields (present in all events) ===
+      event_type:
+        type: string
+        enum: [extraction_task_completed, extraction_email_completed]
+        description: |
+          Event type. Determines which optional fields will be present:
+          - extraction_task_completed: Individual PDF processed
+          - extraction_email_completed: All PDFs from email finished
+        example: extraction_task_completed
+
+      timestamp:
+        type: datetime
+        description: Event timestamp in ISO 8601 format.
+        example: 2024-01-28T10:30:00.000Z
+
+      webhook_correlation_id:
+        type: string
+        description: Correlation ID for idempotency.
+        example: 550e8400-e29b-41d4-a716-446655440001
+
+      sender_email:
+        type: string
+        description: Sender email address.
+        example: vendor@example.com
+
+      subject:
+        type: string
+        description: Email subject.
+        example: Invoice #INV-2024-001
+
+      # === Task-level fields (extraction_task_completed only) ===
+      original_filename?:
+        type: string
+        description: Original PDF filename (extraction_task_completed only).
+        example: invoice_001.pdf
+
+      normalized_filename?:
+        type: string
+        description: Normalized filename (extraction_task_completed only).
+        example: invoice_001
+
+      source?:
+        type: string
+        description: Configured source system (extraction_task_completed only).
+        example: JDE
+
+      status?:
+        type: string
+        enum: [COMPLETED, FAILED, PROCESSED, CANCELLED]
+        description: Processing status (extraction_task_completed only).
+        example: COMPLETED
+
+      is_retry?:
+        type: boolean
+        description: |
+          Indicates if this task was manually retried by an admin.
+          When true, check `previous_status` and `changed` fields.
+        example: false
+
+      previous_status?:
+        type: string
+        enum: [FAILED, COMPLETED, CANCELLED]
+        description: |
+          Previous terminal status before retry (only present when is_retry=true).
+        example: FAILED
+
+      changed?:
+        type: boolean
+        description: |
+          Indicates if the status changed after retry.
+          - true: Status changed (e.g., FAILED → COMPLETED)
+          - false: Status remained the same
+        example: false
+
+      extracted_data?:
+        type: object
+        description: |
+          Extracted data from the PDF (only when status=COMPLETED).
+          Structure depends on your extraction template.
+
+      error_message?:
+        type: string
+        description: Error message (only when status=FAILED).
+        example: No active template found for tenant=1, source=JDE
+
+      parse_error?:
+        type: string
+        description: JSON parsing error (rare; internal error).
+
+      # === Email-level fields (extraction_email_completed only) ===
+      received_date?:
+        type: datetime
+        description: Email received timestamp (extraction_email_completed only).
+        example: 2024-01-28T10:00:00.000Z
+
+      total_files?:
+        type: integer
+        description: Total PDFs found in the email (extraction_email_completed only).
+        example: 3
+
+      extracted_files?:
+        type: integer
+        description: Number of PDFs processed successfully (extraction_email_completed only).
+        example: 2
+
+      failed_files?:
+        type: integer
+        description: Number of PDFs that failed (extraction_email_completed only).
+        example: 1
+
+      success_rate?:
+        type: number
+        format: double
+        description: Success rate percentage (extraction_email_completed only).
+        example: 66.67
+
+      has_retry_results?:
+        type: boolean
+        description: |
+          Indicates if any task in this email was retried (extraction_email_completed only).
+        example: false
+
+      changed_count?:
+        type: integer
+        description: |
+          Number of tasks that changed status after retry (extraction_email_completed only).
+        example: 0
+
+      extractions?:
+        type: array
+        description: List of all extractions (extraction_email_completed only).
+        items:
+          type: object
+          properties:
+            task_id?:
+              type: integer
+              description: Task ID.
+              example: 123
+            correlation_id?:
+              type: string
+              description: Task correlation ID.
+              example: 550e8400-e29b-41d4-a716-446655440001
+            original_filename?:
+              type: string
+              description: Original PDF filename.
+              example: invoice_001.pdf
+            normalized_filename?:
+              type: string
+              description: Normalized filename.
+              example: invoice_001
+            source?:
+              type: string
+              description: Source system.
+              example: JDE
+            status?:
+              type: string
+              enum: [COMPLETED, FAILED, CANCELLED, PROCESSED]
+              description: Processing status.
+              example: COMPLETED
+            is_retry?:
+              type: boolean
+              description: Indicates if this task was manually retried.
+              example: false
+            previous_status?:
+              type: string
+              enum: [FAILED, COMPLETED, CANCELLED]
+              description: Previous status before retry (only when is_retry=true).
+              example: FAILED
+            changed?:
+              type: boolean
+              description: Indicates if the status changed after retry.
+              example: false
+            extracted_data?:
+              type: object
+              description: Extracted data based on the configured template.
+            error_message?:
+              type: string
+              description: Error message when status=FAILED.
+              example: No active template found
+
+/v1:
+  /webhooks/extraction:
+    displayName: Webhook Receiver Endpoint
+    description: |
+      This is the endpoint you must implement in your system to receive webhooks.
+      Configure the full URL on the tenant (e.g., https://your-api.com/webhooks/extraction)
+
+    post:
+      description: |
+        Receives extraction completion notifications.
+
+        ## Recommended Implementation
+
+        ```javascript
+        app.post('/webhooks/extraction', async (req, res) => {
+          const event = req.body;
+          const eventType = event.event_type;
+
+          // Respond 200 OK immediately (important!)
+          res.status(200).send('OK');
+
+          // Process asynchronously
+          if (eventType === 'extraction_task_completed') {
+            await handleTaskCompleted(event);
+          } else if (eventType === 'extraction_email_completed') {
+            await handleEmailCompleted(event);
+          }
+        });
+        ```
+
+        ## Important
+
+        - Respond 200 OK as fast as possible (< 5 seconds)
+        - Process the webhook asynchronously
+        - If you respond with an error, the system will retry with exponential backoff
+        - Use webhook_correlation_id IDs to guarantee idempotency
+
+      headers:
+        Content-Type:
+          type: string
+          enum: [application/json]
+          example: application/json
+        User-Agent:
+          type: string
+          example: Atina-Invoice-Extractor/1.0
+        X-Webhook-Event:
+          type: string
+          description: Event type being sent.
+          enum: [extraction_task_completed, extraction_email_completed,extraction_completed]
+          example: extraction_task_completed
+
+      body:
+        application/json:
+          type: WebhookEvent
+          examples:
+            task_completed_success:
+              displayName: Task Completed (Success)
+              description: Webhook sent when an individual PDF is processed successfully.
+              value:
+                event_type: extraction_task_completed
+                timestamp: 2024-01-28T10:30:00.000Z
+                email_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440001
+                original_filename: invoice_001.pdf
+                normalized_filename: invoice_001
+                source: JDE
+                status: COMPLETED
+                is_retry: false
+                changed: false
+                extracted_data:
+                  field1: value1
+                  field2: value2
+                  nested_field:
+                    subfield1: value
+
+            task_completed_failed:
+              displayName: Task Completed (Failed)
+              description: Webhook sent when an individual PDF fails processing.
+              value:
+                event_type: extraction_task_completed
+                timestamp: 2024-01-28T10:31:00.000Z
+                email_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440002
+                original_filename: invoice_002.pdf
+                normalized_filename: invoice_002
+                source: JDE
+                status: FAILED
+                is_retry: false
+                changed: false
+                error_message: No active template found for tenant=1, source=JDE
+
+            task_retry_success:
+              displayName: Task Retry (Success)
+              description: |
+                Webhook sent when a previously failed PDF is retried and succeeds.
+                Note is_retry=true, previous_status=FAILED, changed=true.
+              value:
+                event_type: extraction_task_completed
+                timestamp: 2024-01-28T11:00:00.000Z
+                email_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440002
+                original_filename: invoice_002.pdf
+                normalized_filename: invoice_002
+                source: JDE
+                status: COMPLETED
+                is_retry: true
+                previous_status: FAILED
+                changed: true
+                extracted_data:
+                  field1: value1
+                  field2: value2
+
+            task_retry_failed_again:
+              displayName: Task Retry (Failed Again)
+              description: |
+                Webhook sent when a previously failed PDF is retried and fails again.
+                Note is_retry=true, previous_status=FAILED, changed=false (status didn't change).
+              value:
+                event_type: extraction_task_completed
+                timestamp: 2024-01-28T11:00:00.000Z
+                email_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440002
+                original_filename: invoice_002.pdf
+                normalized_filename: invoice_002
+                source: JDE
+                status: FAILED
+                is_retry: true
+                previous_status: FAILED
+                changed: false
+                error_message: Template validation still failing
+
+            email_completed:
+              displayName: Email Completed (Consolidated)
+              description: Webhook sent when ALL PDFs from the email have finished (success or failure).
+              value:
+                event_type: extraction_email_completed
+                timestamp: 2024-01-28T10:35:00.000Z
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                received_date: 2024-01-28T10:00:00.000Z
+                total_files: 3
+                extracted_files: 2
+                failed_files: 1
+                success_rate: 66.67
+                has_retry_results: false
+                changed_count: 0
+                extractions:
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440001
+                    original_filename: invoice_001.pdf
+                    normalized_filename: invoice_001
+                    source: JDE
+                    status: COMPLETED
+                    is_retry: false
+                    changed: false
+                    extracted_data:
+                      field_example: value
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440002
+                    original_filename: invoice_002.pdf
+                    normalized_filename: invoice_002
+                    source: JDE
+                    status: COMPLETED
+                    is_retry: false
+                    changed: false
+                    extracted_data:
+                      field_example: value
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440003
+                    original_filename: invoice_003.pdf
+                    normalized_filename: invoice_003
+                    source: JDE
+                    status: FAILED
+                    is_retry: false
+                    changed: false
+                    error_message: No active template found for tenant=1, source=JDE
+
+            email_completed_with_retry:
+              displayName: Email Completed (With Retry Results)
+              description: |
+                Webhook sent after a retry was performed on a failed PDF.
+                Note has_retry_results=true, changed_count=1, and invoice_002 shows
+                is_retry=true, previous_status=FAILED, changed=true.
+              value:
+                event_type: extraction_email_completed
+                timestamp: 2024-01-28T11:00:00.000Z
+                webhook_correlation_id: 550e8400-e29b-41d4-a716-446655440000
+                sender_email: vendor@example.com
+                subject: "Invoice #INV-2024-001"
+                received_date: 2024-01-28T10:00:00.000Z
+                total_files: 3
+                extracted_files: 3
+                failed_files: 0
+                success_rate: 100.0
+                has_retry_results: true
+                changed_count: 1
+                extractions:
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440001
+                    original_filename: invoice_001.pdf
+                    normalized_filename: invoice_001
+                    source: JDE
+                    status: COMPLETED
+                    is_retry: false
+                    changed: false
+                    extracted_data:
+                      field_example: value
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440002
+                    original_filename: invoice_002.pdf
+                    normalized_filename: invoice_002
+                    source: JDE
+                    status: COMPLETED
+                    is_retry: true
+                    previous_status: FAILED
+                    changed: true
+                    extracted_data:
+                      field_example: value_after_retry
+                  - correlation_id: 550e8400-e29b-41d4-a716-446655440003
+                    original_filename: invoice_003.pdf
+                    normalized_filename: invoice_003
+                    source: JDE
+                    status: COMPLETED
+                    is_retry: false
+                    changed: false
+                    extracted_data:
+                      field_example: value
+
+      responses:
+        200:
+          description: |
+            Webhook received successfully.
+            Your server MUST respond with 200 OK to acknowledge receipt.
+          body:
+            text/plain:
+              example: OK
+
+        400:
+          description: |
+            Client error. The system will retry the webhook:
+            - Retry 1: after 60 seconds
+            - Retry 2: after 120 seconds
+            - Retry 3: after 240 seconds
+            - Retry 4: after 480 seconds
+            - Retry 5: after 960 seconds (final attempt)
+
+        500:
+          description: |
+            Server error. The system will retry the webhook.
+            The same retry rules apply as for 4xx responses.
+
+  /status:
+    description: Get status. Validate-Token-Response.json
+    get:
+      description: Get status.
+      queryParameters:
+        force-exception:
+          description: Force an exception.
+          type: boolean
+          required: false
+      responses:
+        200:
+          body:
+            application/json:
+              description: Status response.
+              example: !include examples/Status-Response.json
+        400:
+          body:
+            application/json:
+              description: Bad request.
+              example: !include examples/ResponseStandard-400.json
+        500:
+          body:
+            application/json:
+              description: Internal server error.
+              example: !include examples/ResponseStandard-500.json

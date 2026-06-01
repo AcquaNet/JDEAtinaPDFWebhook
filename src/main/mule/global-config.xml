@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+ 
+ 	<!--  =============================================================== -->
+	<!--  Configuration Properties                                        -->
+	<!--  =============================================================== -->
+	
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="838368d9-1dd5-4587-9668-3820dc06f0d7"
+		file="config/common.properties" />
+		
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="883b2bde-c9f6-410f-9e94-27e7d96377f5"
+		file="config/${mule_env}.properties" />
+		 
+	<global-property doc:name="Global Property"
+		doc:id="6567d5eb-ac74-4dc1-bd90-3e702c2a3dfd" name="mule_env"
+		value="local" />
+	 
+ 	<!--  =============================================================== -->
+	<!--  Global Configuration Handler                                        -->
+	<!--  =============================================================== -->
+	
+	<configuration doc:name="Configuration"
+		doc:id="888625d8-21ea-45ef-a417-66d32854e820"
+		defaultErrorHandler-ref="ApiKit_Error_Handler" />
+	 
+	<!--  =============================================================== -->
+	<!--  LISTENERS                                                       -->
+	<!--  =============================================================== -->
+	 
+	<http:listener-config
+		name="HTTP_Listener_config">
+		<http:listener-connection host="0.0.0.0"
+			port="${http.port}" protocol="HTTP">
+		</http:listener-connection>
+	</http:listener-config>
+	
+	<http:listener-config
+		name="HTTPS_Listener_config">
+		<http:listener-connection host="0.0.0.0"
+			port="${https.port}" protocol="HTTPS">
+			<tls:context enabledProtocols="TLSv1.1,TLSv1.2">
+				<tls:key-store type="jks" path="keystore/keystore.jks"
+					alias="${jks.alias}" keyPassword="${jks.keyPassword}"
+					password="${jks.password}" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+</mule>

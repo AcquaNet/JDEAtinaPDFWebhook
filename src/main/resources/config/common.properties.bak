@@ -1,0 +1,52 @@
+# ------------------------------------------------
+# Version Status
+# ------------------------------------------------
+#
+# Se usa para verificar en el API status deployments
+#
+ce.version=1.0.22
+#
+# Logger
+#
+logger.category=ce-logger
+#
+# =================================================
+# KeyStore
+# =================================================
+# 
+#  Instructions 
+#  
+#     1) Create the Keystore and Generate a Certificate
+#    
+#         keytool -genkey -alias mule -keyalg RSA -keystore keystore.jks
+#   
+#     2) Export the Certificate
+#
+#         keytool -export -alias mule -file client.cer -keystore keystore.jks
+#
+#     3) Import the Certificate to the Truststore
+#
+#         keytool -import -v -trustcacerts -alias mule -file client.cer -keystore truststore.ts
+#
+#  --------
+#  KeyStore
+#  --------
+#
+jks.alias=mule
+jks.password=CE2025!
+jks.keyPassword=CE2025!
+# 
+#
+# --------
+# Trustore
+# --------
+#
+trustore.password=CE2025!
+#
+# ------------
+# CipherSuites
+# ------------
+#
+enabledCipherSuites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+#
+#

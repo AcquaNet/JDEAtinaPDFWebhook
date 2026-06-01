@@ -1,0 +1,28 @@
+{
+    "classLoaderModelLoaderDescriptor": {
+        "attributes": {
+            "includeTestDependencies": "false",
+            "exportedPackages": [
+                "com.sota.jwt",
+                "com.sota.prestamo",
+                "com.sota.report"
+            ],
+            "exportedResources": [
+                "log4j2.xml",
+                "keystore.jks",
+                "truststore.ts",
+                "application-types.xml",
+                "config/common.properties",
+                "config/local.properties",
+                "config/local-docker.properties",
+                "dwl/health.dwl"
+            ]
+        },
+        "id": "mule"
+    },
+    "requiredProduct": "MULE",
+    "minMuleVersion": "4.6.0",
+    "javaSpecificationVersions": ["1.8"],
+    "Description": "4.6.0, 1.8"
+}
+
