@@ -3,13 +3,11 @@
         "attributes": {
             "includeTestDependencies": "false",
             "exportedPackages": [
-                "com.sota.jwt",
-                "com.sota.prestamo",
-                "com.sota.report"
+                
             ],
             "exportedResources": [
                 "log4j2.xml",
-                "keystore.jks",
+                "keystore/keystore.jks",
                 "truststore.ts",
                 "application-types.xml",
                 "config/common.properties",

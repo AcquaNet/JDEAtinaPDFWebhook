@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
 	xmlns:os="http://www.mulesoft.org/schema/mule/os"
 	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
 	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
@@ -8,6 +9,7 @@
 	xmlns="http://www.mulesoft.org/schema/mule/core"
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd 
 http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
 http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd 
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
@@ -55,11 +57,28 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		name="HTTPS_Listener_config">
 		<http:listener-connection host="0.0.0.0"
 			port="${https.port}" protocol="HTTPS">
-			<tls:context enabledProtocols="TLSv1.1,TLSv1.2">
+			<tls:context enabledProtocols="TLSv1.2">
 				<tls:key-store type="jks" path="keystore/keystore.jks"
 					alias="${jks.alias}" keyPassword="${jks.keyPassword}"
 					password="${jks.password}" />
 			</tls:context>
 		</http:listener-connection>
 	</http:listener-config>
+	
+	<!--  =============================================================== -->
+	<!--  VM CONFIG                                                       -->
+	<!--  =============================================================== -->
+	
+ 	<vm:config name="VM_Config" doc:name="VM Config" doc:id="7bfa5013-0d4d-4c26-baa0-157ee5820cce">
+        <vm:connection />
+        <vm:queues>
+            <vm:queue queueName="TASK" />
+        </vm:queues>
+    </vm:config>
+   
+    <!--  =============================================================== -->
+	<!--  OBJECT STORE                                                    -->
+	<!--  =============================================================== -->
+	
+    <os:object-store name="Object_store" doc:name="Object store" doc:id="be6afc30-8be7-49ea-b350-eab5c2ce109f" />
 </mule>

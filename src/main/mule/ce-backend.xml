@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
     <apikit:config name="ce-backend-config" api="ce-backend.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <vm:config name="VM_Config" doc:name="VM Config" doc:id="9d6f500a-c6b4-48ee-82c5-4b9b49ad449d">
-        <vm:connection />
-        <vm:queues>
-            <vm:queue queueName="TASK" />
-        </vm:queues>
-    </vm:config>
-    <os:object-store name="Object_store" doc:name="Object store" doc:id="e13669d8-3720-4dd7-9115-120c4474ea4f" />
     <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="42d8c270-569a-4ff2-bbfd-5bfe651fb116">
         <http:request-connection host="localhost" port="8080" />
     </http:request-config>
