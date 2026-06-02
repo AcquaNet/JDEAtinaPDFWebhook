@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
     <apikit:config name="ce-backend-config" api="ce-backend.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="42d8c270-569a-4ff2-bbfd-5bfe651fb116">
-        <http:request-connection host="localhost" port="8080" />
+    <http:request-config name="HTTPS_Request_Dockia_configuration" doc:name="HTTP Request configuration" doc:id="42d8c270-569a-4ff2-bbfd-5bfe651fb116">
+        <http:request-connection host="${atina.host}" port="${atina.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:trust-store path="keystore/truststore.ts" password="${trustore.password}" type="pkcs12" insecure="true" />
+			</tls:context>
+		</http:request-connection>
     </http:request-config>
     <flow name="ce-backend-main">
         <http:listener config-ref="HTTPS_Listener_config" path="/api/*">
@@ -74,7 +79,7 @@ output application/json
         <set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  correlation_id: payload.webhook_correlation_id,&#10;  status: "PROCESSED",&#10;  reference: "Proveedor 521080",&#10;  message: "Factura registrada exitosamente"&#10;}]' doc:name="Prepare Response" doc:id="e872fbfe-fbc0-4fd3-9c3d-d2246dcd917c" />
         <logger level="INFO" doc:name="Logger Start" doc:id="3a257a6a-365d-4366-bf49-36dfd449c742" message="Start Sending Callback..." />
         <logger level="INFO" doc:name="Logger" doc:id="3877f09e-09d7-4ab6-b7c5-3c5329729ce7" message="Response: #[payload]" />
-        <http:request method="POST" doc:name="Request" doc:id="8730b721-0a97-42e8-ab8e-7105fd832d5a" config-ref="HTTP_Request_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
+        <http:request method="POST" doc:name="Request" doc:id="8730b721-0a97-42e8-ab8e-7105fd832d5a" config-ref="HTTPS_Request_Dockia_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
             <http:headers><![CDATA[#[%dw 2.0
     output application/java
     ---
@@ -86,16 +91,24 @@ output application/json
     <flow name="ce-backend-process-pdf-flow" doc:id="29dcfb54-e636-4d6d-a8d9-b1c23137643e">
         <choice doc:name="Choice" doc:id="0fff0768-967c-43b2-9b15-a270dea6451a">
             <when expression="#[payload.status == 'COMPLETED']">
-                <set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  correlation_id: payload.webhook_correlation_id,&#10;  status: &quot;PROCESSED&quot;,&#10;  reference: '00010-X1-25011239',&#10;  message: &quot;Factura registrada exitosamente&quot;&#10;}]" doc:name="Prepare Response" doc:id="36e25979-443c-4dc3-b885-222f80e917d7" />
-                <logger level="INFO" doc:name="Logger Start" doc:id="0dd539bc-a492-46c1-aa05-dad36e39cd1e" message="Start Sending Callback..." />
+                <set-variable value="#[payload]" doc:name="Save Correlation ID" doc:id="3989a9da-74f2-4a0f-869c-1ad5bc8cfde6" variableName="originalPayload"/>
+				<logger level="INFO" doc:name="Logger Start" doc:id="0dd539bc-a492-46c1-aa05-dad36e39cd1e" message="Start Sending Callback..." />
                 <logger level="INFO" doc:name="Logger" doc:id="f065b07a-2139-4912-87bd-56799625f0ba" message="Response: #[payload]" />
-                <http:request method="POST" doc:name="Request" doc:id="b45a45b3-66f1-4d6d-800f-335deac506db" config-ref="HTTP_Request_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
+				<set-payload value="#[%dw 2.0&#10;output application/x-www-form-urlencoded&#10;---&#10;{&#10;  grant_type: 'password',&#10;  username: p('atina.token.user'),&#10;  password: p('atina.token.pass')&#10;}]" doc:name="Prepare Token Request" doc:id="90509cc6-3551-4345-8ef8-6280dee659ca" />
+				<http:request doc:name="Request Callback" doc:id="10665075-c147-4c6e-b6a3-8d53060f1be8" config-ref="HTTPS_Request_Dockia_configuration" method="POST" path="/api/v1/oauth2/token" sendCorrelationId="ALWAYS" correlationId="#[correlationId]" target="token">
+					<http:headers ><![CDATA[#[%dw 2.0
+    output application/java
+    ---
+    {
+      'Content-Type': "application/x-www-form-urlencoded"}]]]></http:headers>
+		</http:request>
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  correlation_id: vars.originalPayload.webhook_correlation_id,&#10;  status: &quot;PROCESSED&quot;,&#10;  reference: vars.originalPayload.extracted_data.document.datos_documento_02.punto_venta ++ '-' ++ vars.originalPayload.extracted_data.document.datos_documento_02.numero_comprobante,&#10;  message: &quot;Factura registrada exitosamente&quot;&#10;}]" doc:name="Prepare Response" doc:id="36e25979-443c-4dc3-b885-222f80e917d7" />
+				<http:request method="POST" doc:name="Request Callback" doc:id="b45a45b3-66f1-4d6d-800f-335deac506db" config-ref="HTTPS_Request_Dockia_configuration" path="/api/v1/webhook-callback" sendCorrelationId="ALWAYS" correlationId="#[correlationId]">
                     <http:headers><![CDATA[#[%dw 2.0
     output application/java
     ---
     {
-      'Authorization': "Bearer " ++ p('atina.token')
-    }]]]></http:headers>
+      'Authorization': "Bearer " ++ vars.token.access_token}]]]></http:headers>
                 </http:request>
             </when>
         </choice>

@@ -8,7 +8,7 @@
             "exportedResources": [
                 "log4j2.xml",
                 "keystore/keystore.jks",
-                "truststore.ts",
+                "keystore/truststore.ts",
                 "application-types.xml",
                 "config/common.properties",
                 "config/local.properties",

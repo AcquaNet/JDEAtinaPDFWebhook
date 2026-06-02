@@ -37,7 +37,7 @@
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="file"/>
-            <AppenderRef ref="logstash"/>
+<!--             <AppenderRef ref="logstash"/> -->
         </AsyncRoot>
     </Loggers>
 
