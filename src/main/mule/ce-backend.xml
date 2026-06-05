@@ -70,7 +70,7 @@ output application/json
                 <flow-ref doc:name="ce-backend-process-email-flow" doc:id="4ad0c610-97be-49c1-896a-b7424332836f" name="ce-backend-process-email-flow" />
             </when>
             <otherwise>
-                <flow-ref doc:name="ce-backend-process-email-flow" doc:id="15ab2e91-487c-4aae-80a4-1d6479d66d2d" name="ce-backend-process-pdf-flow" />
+                <flow-ref doc:name="ce-backend-process-pdf-flow" doc:id="15ab2e91-487c-4aae-80a4-1d6479d66d2d" name="ce-backend-process-pdf-flow" />
             </otherwise>
         </choice>
         <logger level="INFO" doc:name="Logger End" doc:id="85ca1b88-b195-4e7b-8669-66d15c20439b" message="END Processing TASK with Correlation ID #[correlationId]" />
@@ -95,7 +95,7 @@ output application/json
 				<logger level="INFO" doc:name="Logger Start" doc:id="0dd539bc-a492-46c1-aa05-dad36e39cd1e" message="Start Sending Callback..." />
                 <logger level="INFO" doc:name="Logger" doc:id="f065b07a-2139-4912-87bd-56799625f0ba" message="Response: #[payload]" />
 				<set-payload value="#[%dw 2.0&#10;output application/x-www-form-urlencoded&#10;---&#10;{&#10;  grant_type: 'password',&#10;  username: p('atina.token.user'),&#10;  password: p('atina.token.pass')&#10;}]" doc:name="Prepare Token Request" doc:id="90509cc6-3551-4345-8ef8-6280dee659ca" />
-				<http:request doc:name="Request Callback" doc:id="10665075-c147-4c6e-b6a3-8d53060f1be8" config-ref="HTTPS_Request_Dockia_configuration" method="POST" path="/api/v1/oauth2/token" sendCorrelationId="ALWAYS" correlationId="#[correlationId]" target="token">
+				<http:request doc:name="Request Get Token" doc:id="10665075-c147-4c6e-b6a3-8d53060f1be8" config-ref="HTTPS_Request_Dockia_configuration" method="POST" path="/api/v1/oauth2/token" sendCorrelationId="ALWAYS" correlationId="#[correlationId]" target="token">
 					<http:headers ><![CDATA[#[%dw 2.0
     output application/java
     ---
